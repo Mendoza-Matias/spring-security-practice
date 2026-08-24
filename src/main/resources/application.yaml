@@ -1,3 +1,21 @@
 spring:
   application:
     name: registerofusers
+  datasource:
+    url: jdbc:mysql://localhost:3306/registerofusers
+    username: root
+    password: 805729
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  sql:
+    init:
+      mode:
+  jpa:
+    defer-datasource-initialization: true
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+app:
+  jwt:
+    secret: Y2xhdmVkZXBydWViYXBhcmFsYWFwbGljYWNpb25kZXJlZ2lzdGVyb2Z1c2Vycw==
+    expiration-ms: 900000
+    refresh-expiration-ms: 604800000

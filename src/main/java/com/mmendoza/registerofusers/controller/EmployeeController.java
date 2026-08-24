@@ -1,7 +1,9 @@
 package com.mmendoza.registerofusers.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -21,6 +23,7 @@ public class EmployeeController {
 
     // 2. Funcionalidad Admin: Ver todos los empleados
     @GetMapping("/admin/employees")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<Map<String, String>>> getAllEmployees() {
         List<Map<String, String>> employees = List.of(
                 Map.of("id", "1", "nombre", "Juan Pérez", "puesto", "Desarrollador"),
@@ -30,14 +33,14 @@ public class EmployeeController {
     }
 
     // 3. Funcionalidad Empleado: Ver únicamente su perfil personal
-    @GetMapping("/employee/profile")
-    public ResponseEntity<Map<String, String>> getMyProfile(Principal principal) {
-        // Obtenemos el nombre del usuario autenticado de manera segura a través del contexto
-        String username = principal.getName();
+    @GetMapping("/employee/profile/{username}")
+    @PreAuthorize("hasRole('ADMIN') or #username == authentication.name") // Seguridad contextual inteligente [12]
+    public ResponseEntity<Map<String, String>> getMyProfile(@PathVariable String username) {
         return ResponseEntity.ok(Map.of(
                 "usuario", username,
                 "correo", username + "@empresa.com",
-                "detalles", "Este es tu perfil de empleado privado."
+                "puesto", "Empleado de planta",
+                "detalles", "Información confidencial de tu contrato laboral."
         ));
     }
 }
