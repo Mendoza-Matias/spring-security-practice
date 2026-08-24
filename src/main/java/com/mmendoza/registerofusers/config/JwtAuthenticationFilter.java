@@ -1,6 +1,5 @@
 package com.mmendoza.registerofusers.config;
 
-import com.mmendoza.registerofusers.service.CustomUserService;
 import com.mmendoza.registerofusers.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
