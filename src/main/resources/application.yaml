@@ -1,3 +1,20 @@
 spring:
   application:
     name: registerofusers
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  sql:
+    init:
+      mode:
+  jpa:
+    defer-datasource-initialization: true
+    hibernate:
+      ddl-auto: validate
+app:
+  jwt:
+    secret: ${JWT_SECRETS}
+    expiration-ms: ${JWT_EXPIRATION_MS}
+    refresh-expiration-ms: ${JWT_REFRESH_TOKEN}
