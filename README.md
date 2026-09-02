@@ -1,4 +1,4 @@
-<h1 align="center">register-of-users</h1>
+<h1 align="center">spring-security-practice</h1>
 
 ---
 
