@@ -1,14 +1,15 @@
 package com.mmendoza.registerofusers.config;
 
-import jakarta.servlet.http.HttpServletResponse;
+import com.mmendoza.registerofusers.shared.error.ApiErrorResponseWriter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.MediaType;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -21,48 +22,55 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthFilter) {
+    private final CorsConfiguration corsConfiguration;
+    private final ApiErrorResponseWriter errorResponseWriter;
+
+    public SecurityConfig(
+            JwtAuthenticationFilter jwtAuthFilter,
+            CorsConfiguration corsConfiguration,
+            ApiErrorResponseWriter errorResponseWriter
+    ) {
         this.jwtAuthFilter = jwtAuthFilter;
+        this.corsConfiguration = corsConfiguration;
+        this.errorResponseWriter = errorResponseWriter;
     }
 
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) {
         http
+                .cors(cors -> cors.configurationSource(corsConfiguration.corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                //configuration of access
-//                .authorizeHttpRequests(auth -> auth
-//                        .requestMatchers("/api/public").permitAll()
-//                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-//                        .requestMatchers("/api/employee/**").hasAnyRole("EMPLOYEE", "ADMIN")
-//                        .anyRequest().authenticated()
-//                )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/register").permitAll()
-                        .requestMatchers("/api/auth/login").permitAll()
+                        .requestMatchers("/api/auth/login", "/api/auth/refresh", "/api/auth/logout").permitAll()
+                        .requestMatchers("/api/public/**").permitAll()
                         .anyRequest().authenticated()
                 )
 
                 // Manejo de errores seguro para APIs REST (Retorna JSON en lugar de redirección HTML) [6, 7]
                 .exceptionHandling(exceptions -> exceptions
-                        .authenticationEntryPoint((request, response, authException) -> {
-                            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                            response.getWriter().write("{\"error\": \"No autorizado\", \"mensaje\": \"" + authException.getMessage() + "\"}");
-                        })
-                        .accessDeniedHandler((request, response, accessDeniedException) -> {
-                            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                            response.getWriter().write("{\"error\": \"Acceso denegado\", \"mensaje\": \"No tienes los permisos requeridos.\"}");
-                        })
+                        .authenticationEntryPoint((request, response, authException) ->
+                                errorResponseWriter.write(
+                                        request,
+                                        response,
+                                        HttpStatus.UNAUTHORIZED,
+                                        "UNAUTHORIZED",
+                                        "Es necesario autenticarse para acceder a este recurso."
+                                )
+                        )
+                        .accessDeniedHandler((request, response, accessDeniedException) ->
+                                errorResponseWriter.write(
+                                        request,
+                                        response,
+                                        HttpStatus.FORBIDDEN,
+                                        "ACCESS_DENIED",
+                                        "No tienes permisos para realizar esta operación."
+                                )
+                        )
                 )
-                // Registramos el filtro JWT en el lugar correcto del ciclo de vida [8]
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
-
-//                .httpBasic(Customizer.withDefaults())
-//
-//                .formLogin(Customizer.withDefaults());
 
         return http.build();
     }
@@ -76,19 +84,4 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
-
-//    @Bean
-//    public UserDetailsService userDetailsService(PasswordEncoder encoder) {
-//        UserDetails admin = User.withUsername("admin")
-//                .password(encoder.encode("admin123")) // Almacenamos la contraseña ya encriptada
-//                .roles("ADMIN")
-//                .build();
-//
-//        UserDetails employee = User.withUsername("empleado")
-//                .password(encoder.encode("empleado123"))
-//                .roles("EMPLOYEE")
-//                .build();
-//
-//        return new InMemoryUserDetailsManager(admin, employee); // Almacenamiento en memoria [4]
-//    }
 }
